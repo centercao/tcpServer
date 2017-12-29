@@ -35,6 +35,9 @@ function Context(socket,cet) {
 		that.request.dataBuffers.push(data);
 		// 激发中间件处理接收到的数据
 		that.cet.trigger(that);
+		if(that.request.rvLen > 0){
+			that.cet.trigger(that);
+		}
 	});
 }
 Context.prototype = {
