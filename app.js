@@ -2,12 +2,13 @@
  * Created by center ON 17-12-19
  */
 const Cet = require("./middlewares/cetHelper");
-var cet = new Cet();
+var app = new Cet();
 const routes = require("./middlewares/routesHelper");
 const bussiness = require("./routes/bussiness");
+const checkData = require("./middlewares/checkData");
 
 // log
-cet.use(async function (ctx,next) {
+app.use(async function (ctx,next) {
 	const start = new Date();
 	try{
 		// ctx.logger = logger;
@@ -24,7 +25,7 @@ cet.use(async function (ctx,next) {
 	}
 });
 // format output
-cet.use(async function (ctx,next) {
+app.use(async function (ctx,next) {
 	try{
 		await next();
 		ctx.body = {
@@ -43,18 +44,19 @@ cet.use(async function (ctx,next) {
 		throw error;
 	}
 });
+app.use(checkData());
 // check data
-cet.use(async function (ctx,next) {
+app.use(async function (ctx,next) {
 	ctx.request.url = 1;
 	await next();
 	ctx.status = 200;
 });
 // routes
-cet.use(routes.route());
+app.use(routes.route());
 // 404
-cet.use(async function (ctx,next) {
+app.use(async function (ctx,next) {
 	ctx.status = 404;
 	throw new Error("请求的资源不存在...");
 });
 
-cet.create(6000);
+app.create(6000);

@@ -9,6 +9,7 @@ function Context(socket,cet) {
 	this.socket = socket;
 	// 请求响应
 	this.request = {}; // 请求结构
+	this.request.isContinue = 0;
 	this.response = {};// 响应结构
 	this.status = 404;
 	this.request.url = -1;
@@ -29,15 +30,35 @@ function Context(socket,cet) {
 			console.log("Client  closed!");
 		}
 	});
+	function dealData(that) {
+		// 激发中间件处理接收到的数据
+		that.cet.trigger(that).then(function () {
+			if(that.response.data){
+				that.send(that.response.data); // 发送响应数据
+				console.log("回复响应数据包:");
+				console.log(that.response.data);
+				if(that.response.status != 200){
+					that.close();
+					return;
+				}
+				that.response = {}; // 初始化响应
+			}
+			if(that.request.rvLen > 0 && that.request.isContinue > 0){
+				dealData(that);
+			}
+		}).catch(function (err) {
+			console.log("error:"  + err.message);
+			that.close();
+		});
+	}
 	// receive data
 	this.socket.on('data', function(data) {
 		that.status = 404;
 		that.request.dataBuffers.push(data);
 		// 激发中间件处理接收到的数据
-		that.cet.trigger(that);
-		if(that.request.rvLen > 0){
-			that.cet.trigger(that);
-		}
+		that.request.rvLen += data.length;
+		that.request.isContinue = 1;
+		dealData(that);
 	});
 }
 Context.prototype = {
