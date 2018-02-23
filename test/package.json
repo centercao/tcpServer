@@ -1,0 +1,11 @@
+{
+  "name": "tcpClient",
+  "version": "0.1.0",
+  "description": "a mock for a tcp/ip client ",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "centercao",
+  "license": "MIT"
+}

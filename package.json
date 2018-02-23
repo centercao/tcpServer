@@ -1,11 +1,19 @@
 {
   "name": "tcpserver",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "a tcp/ip server",
-  "main": "app.js",
+  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://centercao:cao801214@github.com/centercao/tcpServer.git"
+  },
   "author": "centercao",
-  "license": "MIT"
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/centercao/tcpServer/issues"
+  },
+  "homepage": "https://github.com/centercao/tcpServer#readme"
 }

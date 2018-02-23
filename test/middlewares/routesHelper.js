@@ -6,17 +6,19 @@ var Routes ={
 	route: function (){ // 路由处理,加入Cet
 		return async function (ctx,next) {
 			for(var i = 0;i< middleware.length;i++){
-				if(ctx.request.url == middleware[i].url){
+				if(ctx.request.cmd == middleware[i].cmd){
 					await middleware[i].func(ctx,next);
 					return;
 				}
 			}
-			await next();
+			let error = new Error("服务器找不到请求的资源");
+			error.number = 404;
+			throw error;
 		};
 	},
-	use:function (url,func) { // 加入Routes
+	use:function (cmd,func) { // 加入Routes
 		let route = {};
-		route.url = url;
+		route.cmd = cmd;
 		route.func = func;
 		middleware.push(route);
 	}
