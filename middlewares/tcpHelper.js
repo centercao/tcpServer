@@ -3,10 +3,16 @@
  */
 const Net = require('net');
 const G_HEAD = 0xAA75;
-let Context = function () {
+let Context = function (socket) {
 	this.cmd = 0;
 	this.data = null;
+	this.socket = socket;
 	
+};
+Context.prototype = {
+	send:function (buffer) {
+		return this.socket.write(buffer);
+	}
 };
 let Connect = function (socket,server,port) {
 	this.port = port;
@@ -25,12 +31,9 @@ let Connect = function (socket,server,port) {
 			console.log("Client  accidentally closed!");
 			this.socket.destroy();
 		}else {
-			console.log("Client  closed!");
+			console.log("server close the Client!");
 		}
 	});
-	/*function sleep(sleepTime) {
-		for(var start = +new Date; +new Date - start <= sleepTime; ) { }
-	}*/
 	this.socket.on('data', async (data)  =>{
 		this.dataPool.push(data);
 		this.rvLen += data.length;
@@ -51,7 +54,9 @@ Connect.prototype = {
 					let temBuffer = Buffer.concat(this.dataPool);
 					console.log("长度:" +temBuffer.length);
 					console.log(temBuffer);
-					throw new Error("数据头错误");
+					this.socket.destroy();
+					console.log("数据头错误");
+					return;
 				}
 				this.cmd = buffer.readUInt16BE(2); // cmd
 				this.dataLen = buffer.readUInt16BE(4);
@@ -62,7 +67,7 @@ Connect.prototype = {
 			if(this.rvLen >= this.dataLen + 6){ // 数据完整
 				this.header = true;
 				var buffer = Buffer.concat(this.dataPool);
-				let ctx = new Context();
+				let ctx = new Context(this.socket);
 				ctx.cmd = this.cmd;
 				ctx.data = buffer.slice(6,this.dataLen + 6);
 				this.rvLen = this.rvLen - this.dataLen -6; // 10 header
