@@ -22,9 +22,9 @@ let Connect = function (socket,server,port) {
 	this.dataPool = [];
 	this.header = true;
 	// 错误事件监听
-	this.socket.on('error', function(e) {
+	/*this.socket.on('error', function(e) {
 		console.log("socket error:" + e);
-	});
+	});*/
 	// 关闭事件监听
 	this.socket.on('close', (e) => {
 		if(e){
@@ -40,48 +40,57 @@ let Connect = function (socket,server,port) {
 		console.log("on data:%d:收到数据,dataPool length:%d...",this.port,this.dataPool.length);
 		this.transform();
 		console.log("on data:%d:数据处理完成!",this.port);
+		// this.socket.emit('error',"not ok..");
 	});
 };
 Connect.prototype = {
 	transform:async function () {
-		if(this.header){
-			if(this.rvLen > 6){
-				let buffer = Buffer.concat(this.dataPool,6);
-				let dHead = buffer.readUInt16BE(0);
-				if(G_HEAD != dHead){
-					console.log("+++++++NetServer:数据头错误.+++++++++++++");
-					console.log(buffer);
-					let temBuffer = Buffer.concat(this.dataPool);
-					console.log("长度:" +temBuffer.length);
-					console.log(temBuffer);
-					this.socket.destroy();
-					console.log("数据头错误");
-					return;
+		try{
+			if(this.header){
+				if(this.rvLen >= 6){
+					let buffer = Buffer.concat(this.dataPool,6);
+					let dHead = buffer.readUInt16BE(0);
+					if(G_HEAD != dHead){
+						console.log("+++++++NetServer:数据头错误.+++++++++++++");
+						console.log(buffer);
+						let temBuffer = Buffer.concat(this.dataPool);
+						console.log("长度:" +temBuffer.length);
+						console.log(temBuffer);
+						this.socket.destroy();
+						console.log("数据头错误");
+						return;
+					}
+					this.cmd = buffer.readUInt16BE(2); // cmd
+					this.dataLen = buffer.readUInt16BE(4);
+					this.header = false;
 				}
-				this.cmd = buffer.readUInt16BE(2); // cmd
-				this.dataLen = buffer.readUInt16BE(4);
-				this.header = false;
 			}
-		}
-		if(!this.header){
-			if(this.rvLen >= this.dataLen + 6){ // 数据完整
-				this.header = true;
-				var buffer = Buffer.concat(this.dataPool);
-				let ctx = new Context(this);
-				ctx.cmd = this.cmd;
-				ctx.data = buffer.slice(6,this.dataLen + 6);
-				this.rvLen = this.rvLen - this.dataLen -6; // 10 header
-				this.dataPool.length = 0;
-				if(this.rvLen > 0){
-					this.dataPool.push(buffer.slice(this.dataLen + 6));
-					await this.tcpServer.trigger(ctx);
-					this.transform();
-				}else{
-					await this.tcpServer.trigger(ctx);
+			if(!this.header){
+				if(this.rvLen >= this.dataLen + 6){ // 数据完整
+					this.header = true;
+					var buffer = Buffer.concat(this.dataPool);
+					let ctx = new Context(this);
+					ctx.cmd = this.cmd;
+					ctx.data = buffer.slice(6,this.dataLen + 6);
+					this.rvLen = this.rvLen - this.dataLen -6; // 10 header
+					this.dataPool.length = 0;
+					if(this.rvLen > 0){
+						this.dataPool.push(buffer.slice(this.dataLen + 6));
+						await this.tcpServer.trigger(ctx);
+						if(this.rvLen >=6){
+							this.transform();
+						}
+					}else{
+						await this.tcpServer.trigger(ctx);
+					}
+					
 				}
-				
 			}
+		}catch (err){
+			this.socket.destroy();
+			console.log("数据分析错误:",err);
 		}
+		
 	}
 };
 var middlewares = new Map();
@@ -126,9 +135,9 @@ TcpServer.prototype = {
 		{
 			return null;
 		}
-		this.server.on('error', function(e) {
+		/*this.server.on('error', function(e) {
 			console.log("tcpServer error:" + e);
-		});
+		});*/
 		this.server.on('close', function(e) {
 			console.log("tcpServer close:" + e);
 		});
