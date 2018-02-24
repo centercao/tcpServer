@@ -104,4 +104,5 @@ setTimeout(function () { // setInterval
 	buffer.write("BVvT5k5KqG8cLigR",34);
 	console.log((new Date).format("yyyy-M-d h:m:s.S")  + " 发送网关状态....");
 	app.send(buffer);
+	app.socket.end();
 },100);

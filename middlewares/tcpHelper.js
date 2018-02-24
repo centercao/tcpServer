@@ -3,10 +3,10 @@
  */
 const Net = require('net');
 const G_HEAD = 0xAA75;
-let Context = function (socket) {
+let Context = function (connect) {
 	this.cmd = 0;
 	this.data = null;
-	this.socket = socket;
+	this.connect = connect;
 	
 };
 Context.prototype = {
@@ -67,7 +67,7 @@ Connect.prototype = {
 			if(this.rvLen >= this.dataLen + 6){ // 数据完整
 				this.header = true;
 				var buffer = Buffer.concat(this.dataPool);
-				let ctx = new Context(this.socket);
+				let ctx = new Context(this);
 				ctx.cmd = this.cmd;
 				ctx.data = buffer.slice(6,this.dataLen + 6);
 				this.rvLen = this.rvLen - this.dataLen -6; // 10 header
@@ -84,14 +84,13 @@ Connect.prototype = {
 		}
 	}
 };
-var middlewares = [];
+var middlewares = new Map();
 var Router ={
 	route: function (){
 		return async function (ctx,next) {
-			for(var i = 0;i< middlewares.length;i++){
-				if(ctx.cmd == middlewares[i].cmd){
-					return await middlewares[i].func(ctx,next);
-				}
+			let func = middlewares.get(ctx.cmd);
+			if(func){
+				return await func(ctx,next);
 			}
 			let error = new Error("服务器找不到请求的资源");
 			error.number = 404;
@@ -99,10 +98,7 @@ var Router ={
 		};
 	},
 	use:function (cmd,func) {
-		let route = {};
-		route.cmd = cmd;
-		route.func = func;
-		middlewares.push(route);
+		middlewares.set(cmd,func);
 	}
 };
 let TcpServer = function () {
@@ -112,11 +108,10 @@ let TcpServer = function () {
 };
 TcpServer.prototype = {
 	trigger:async function (ctx) {
-		var that = this;
-		var n = 0;
-		var next = async function () {
-			if(that.middlewares[n]){
-			let res =	await that.middlewares[n++](ctx,next);
+		let n = 0;
+		let next = async  () => {
+			if(this.middlewares[n]){
+			let res =	await this.middlewares[n++](ctx,next);
 			console.log("trigger:数据处理结果:%s...",res);
 			}
 		};
